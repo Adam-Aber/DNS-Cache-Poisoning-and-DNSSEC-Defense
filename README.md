@@ -45,16 +45,16 @@ cd ../scripts && bash run-part1.sh
 
 Expected last line: `[+] Part 1 demo SUCCESS  (pcap → docs/captures/poison.pcap)`. Lands the poison in 0.4–4.2 s.
 
-**Run Part 3 (DNSSEC defense):** see `docs/report/part3-source.md` Appendix B for the steps to install BIND tools, generate the trust anchor, swap to `unbound-hardened.conf`, and re-run the same script. The spoofer will report `[-] FAILED to poison within 60s`.
+**Run Part 3 (DNSSEC defense):** see [`docs/report/part3-report.pdf`](docs/report/part3-report.pdf) Appendix B for the steps to install BIND tools, generate the trust anchor, swap to `unbound-hardened.conf`, and re-run the same script. The spoofer will report `[-] FAILED to poison within 60s`.
 
-## Reports (PDF + DOCX)
+## Reports
 
-All reports are pre-rendered with embedded charts:
+All reports are pre-rendered PDFs with embedded charts:
 
 - **[`docs/report/parts1-2-3-report.pdf`](docs/report/parts1-2-3-report.pdf)** — combined master report (recommended)
-- `docs/report/part1-report.{pdf,docx}` — Part 1 only
-- `docs/report/part2-report.{pdf,docx}` — Part 2 (attack analysis with charts)
-- `docs/report/part3-report.{pdf,docx}` — Part 3 (DNSSEC defense)
+- [`docs/report/part1-report.pdf`](docs/report/part1-report.pdf) — Part 1 only (cache poisoning attack)
+- [`docs/report/part2-report.pdf`](docs/report/part2-report.pdf) — Part 2 (pcap analysis with charts)
+- [`docs/report/part3-report.pdf`](docs/report/part3-report.pdf) — Part 3 (DNSSEC defense)
 
 ## Repo layout
 
