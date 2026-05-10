@@ -74,7 +74,7 @@ docs/
     poison.pcap          Part 1 capture (3.2 MB, 23,843 DNS packets)
     poison-dnssec.pcap   Part 3 capture (54 MB, 401,265 DNS packets)
   analysis/       CSVs/TSVs from tshark, plus the chart-generation scripts
-  report/         {part1,part2,part3,parts1-2-3}-report.{pdf,docx,html}
+  report/         {part1,part2,part3,parts1-2-3}-report.pdf
 ```
 
 ## Centerpiece artifact: `lab/attacker/spoofer.py`
