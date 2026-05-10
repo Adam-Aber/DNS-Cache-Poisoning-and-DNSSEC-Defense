@@ -1,0 +1,11 @@
+=== Phase 1 — Post-attack dig ===
+;; communications error to 192.168.56.20#53: timed out
+;; communications error to 192.168.56.20#53: timed out
+;; communications error to 192.168.56.20#53: timed out
+
+; <<>> DiG 9.18.39-0ubuntu0.22.04.2-Ubuntu <<>> @192.168.56.20 www.target.lab +short
+; (1 server found)
+;; global options: +cmd
+;; no servers could be reached
+
+=== Phase 2 — HTTP fetch ===

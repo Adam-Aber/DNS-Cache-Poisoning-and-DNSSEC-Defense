@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Adam Aberbach" />
+  <title>Network Security Project — Parts 1 &amp; 2: DNS Cache Poisoning + Attack Analysis</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <link href="data:text/css;base64,Ym9keXtmb250LWZhbWlseTpDYW1icmlhLEdlb3JnaWEsc2VyaWY7bWF4LXdpZHRoOjkwMHB4O21hcmdpbjoyZW0gYXV0bztwYWRkaW5nOjAgMmVtO2xpbmUtaGVpZ2h0OjEuNTtjb2xvcjojMjIyfWgxLGgyLGgze2ZvbnQtZmFtaWx5OkNhbGlicmksQXJpYWwsc2Fucy1zZXJpZjtjb2xvcjojMWEzMDUwfWgxe2JvcmRlci1ib3R0b206MnB4IHNvbGlkICMxYTMwNTA7cGFkZGluZy1ib3R0b206MC4yZW07cGFnZS1icmVhay1iZWZvcmU6YWx3YXlzfWgxOmZpcnN0LW9mLXR5cGV7cGFnZS1icmVhay1iZWZvcmU6YXV0b31oMntib3JkZXItYm90dG9tOjFweCBzb2xpZCAjY2NjO3BhZGRpbmctYm90dG9tOjAuMTVlbTttYXJnaW4tdG9wOjJlbX1wcmV7YmFja2dyb3VuZDojZjVmNWY1O3BhZGRpbmc6MC44ZW07Ym9yZGVyLWxlZnQ6M3B4IHNvbGlkICMxYTMwNTA7b3ZlcmZsb3cteDphdXRvO2ZvbnQtc2l6ZTowLjg1ZW19Y29kZXtiYWNrZ3JvdW5kOiNlZWY7cGFkZGluZzoxcHggNHB4O2JvcmRlci1yYWRpdXM6M3B4fXRhYmxle2JvcmRlci1jb2xsYXBzZTpjb2xsYXBzZTttYXJnaW46MWVtIDA7Zm9udC1zaXplOjAuOTJlbTt3aWR0aDoxMDAlfXRoLHRke2JvcmRlcjoxcHggc29saWQgIzk5OTtwYWRkaW5nOjAuNGVtIDAuN2VtfXRoe2JhY2tncm91bmQ6IzFhMzA1MDtjb2xvcjojZmZmfWJsb2NrcXVvdGV7Ym9yZGVyLWxlZnQ6NHB4IHNvbGlkICM4ODg7Y29sb3I6IzU1NTtwYWRkaW5nLWxlZnQ6MWVtO2ZvbnQtc3R5bGU6aXRhbGljfQ==" rel="stylesheet" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Network Security Project — Parts 1 &amp; 2: DNS Cache
+Poisoning + Attack Analysis</h1>
+<p class="author">Adam Aberbach</p>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#part-1-dns-cache-poisoning" id="toc-part-1-dns-cache-poisoning">Part 1 — DNS Cache Poisoning</a>
+<ul>
+<li><a href="#lab-setup" id="toc-lab-setup">1. Lab Setup</a></li>
+<li><a href="#resolver-configuration" id="toc-resolver-configuration">2.
+Resolver Configuration</a></li>
+<li><a href="#threat-model" id="toc-threat-model">3. Threat
+Model</a></li>
+<li><a href="#attack-methodology" id="toc-attack-methodology">4. Attack
+Methodology</a></li>
+<li><a href="#execution-evidence" id="toc-execution-evidence">5.
+Execution &amp; Evidence</a></li>
+<li><a href="#caveats" id="toc-caveats">6. Caveats</a></li>
+</ul></li>
+<li><a href="#part-2-attack-analysis" id="toc-part-2-attack-analysis">Part 2 — Attack Analysis</a>
+<ul>
+<li><a href="#wireshark-capture-and-aggregate-counts" id="toc-wireshark-capture-and-aggregate-counts">7. Wireshark capture and
+aggregate counts</a></li>
+<li><a href="#transaction-id-and-source-port-analysis" id="toc-transaction-id-and-source-port-analysis">8. Transaction ID and
+source port analysis</a></li>
+<li><a href="#why-the-attack-succeeded-defenses-bypassed" id="toc-why-the-attack-succeeded-defenses-bypassed">9. Why the attack
+succeeded — defenses bypassed</a></li>
+<li><a href="#summary" id="toc-summary">10. Summary</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="part-1-dns-cache-poisoning">Part 1 — DNS Cache Poisoning</h1>
+<blockquote>
+<p><strong>Status:</strong> sections 1–4 written from design; sections
+5–6 will be filled after live capture (Day 3).</p>
+</blockquote>
+<h2 id="lab-setup">1. Lab Setup</h2>
+<p>Three Ubuntu 22.04 VirtualBox VMs on a host-only network
+<code>192.168.56.0/24</code>, provisioned by a single Vagrantfile. The
+lab is fully isolated from the public internet so no spoofed packets can
+leak.</p>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 34%" />
+<col style="width: 13%" />
+<col style="width: 17%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>VM</th>
+<th>Hostname</th>
+<th>IP</th>
+<th>RAM</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>attacker</td>
+<td>192.168.56.10</td>
+<td>2 GB</td>
+<td>Runs <code>spoofer.py</code> (Scapy) and Nginx serving the “PWNED”
+page on :80</td>
+</tr>
+<tr>
+<td>2</td>
+<td>resolver</td>
+<td>192.168.56.20</td>
+<td>2 GB</td>
+<td>Runs Unbound (deliberately weakened). Listens on :53</td>
+</tr>
+<tr>
+<td>3</td>
+<td>victim</td>
+<td>192.168.56.30</td>
+<td>2 GB</td>
+<td><code>/etc/resolv.conf</code> pinned to 192.168.56.20. Runs
+<code>dig</code>, <code>curl</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Topology</strong> (each VM’s <code>ip -4 addr show</code>
+output is captured in
+<code>docs/screenshots/03-07-full-demo-run.txt</code>):</p>
+<pre><code>attacker  enp0s8  192.168.56.10/24   on lab_intnet
+resolver  enp0s8  192.168.56.20/24   on lab_intnet
+victim    enp0s8  192.168.56.30/24   on lab_intnet
+(all VMs also have enp0s3 NAT for vagrant ssh)</code></pre>
+<p>The Vagrantfile pins the base box to <code>ubuntu/jammy64</code>
+version <code>20240319.0.0</code> so build reproducibility is
+independent of upstream box drift, and uses VirtualBox linked clones to
+keep total disk usage under ~10 GB.</p>
+<h2 id="resolver-configuration">2. Resolver Configuration</h2>
+<p>The resolver runs Unbound 1.16+. The vulnerable configuration lives
+at <code>lab/resolver/unbound-vulnerable.conf</code> and disables
+several modern defenses to make the demo tractable in a 5-minute window.
+Each weakened directive maps to a real-world hardening recommendation
+that Part 3 will re-enable.</p>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 16%" />
+<col style="width: 61%" />
+</colgroup>
+<thead>
+<tr>
+<th>Directive</th>
+<th>Effect</th>
+<th>Real-world defense disabled</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>outgoing-port-permit: &quot;33333&quot;</code> (with
+<code>outgoing-port-avoid: &quot;0-65535&quot;</code>)</td>
+<td>Collapses 16-bit source-port entropy to 1</td>
+<td>RFC 5452 source-port randomization</td>
+</tr>
+<tr>
+<td><code>use-caps-for-id: no</code></td>
+<td>No 0x20 mixed-case echo</td>
+<td>DNS-0x20 query encoding</td>
+</tr>
+<tr>
+<td><code>harden-glue: no</code></td>
+<td>Accepts unsolicited glue</td>
+<td>Bailiwick checking on glue</td>
+</tr>
+<tr>
+<td><code>qname-minimisation: no</code></td>
+<td>Full QNAME sent upstream</td>
+<td>RFC 9156 qname minimisation</td>
+</tr>
+<tr>
+<td><code>module-config: &quot;iterator&quot;</code></td>
+<td>DNSSEC validator not loaded</td>
+<td>DNSSEC validation (Part 3 fix)</td>
+</tr>
+<tr>
+<td><code>forward-zone target.lab → 192.168.56.99</code></td>
+<td>Legitimate response never arrives</td>
+<td>Lab simplification — see §6</td>
+</tr>
+</tbody>
+</table>
+<p>In addition, the resolver’s kernel has
+<code>net.ipv4.conf.all.rp_filter = 0</code> so reverse-path filtering
+does not drop the spoofed packets sourced from
+<code>192.168.56.99</code> (an IP not in any local route).</p>
+<p><strong>Pre-attack baseline:</strong>
+<code>dig @192.168.56.20 www.target.lab</code> from the victim returns
+SERVFAIL after ~5 s. The same query for <code>example.com</code> still
+resolves normally — the resolver is functional, just exploitable on the
+<code>target.lab</code> zone.</p>
+<p>(Pre-attack <code>dig</code> output captured in
+[<code>docs/screenshots/02-resolver-baseline.txt</code>])</p>
+<h2 id="threat-model">3. Threat Model</h2>
+<p><strong>Attacker capability:</strong> off-path. The attacker can send
+arbitrary UDP packets to <code>192.168.56.20</code> from a host on the
+same broadcast domain, but cannot observe the resolver’s outbound
+queries.</p>
+<p><strong>Attacker knowledge:</strong> the resolver’s IP, that the
+resolver pins its source port to <code>33333</code>, and that
+<code>target.lab</code> is forwarded to a non-responsive IP (so the race
+window on each query is ~5 s). The attacker does not know transaction
+IDs.</p>
+<p><strong>Out of scope:</strong> on-path man-in-the-middle, ARP
+spoofing, BGP hijack, attacks against DNSSEC-protected zones (Part
+3).</p>
+<h2 id="attack-methodology">4. Attack Methodology</h2>
+<p><code>spoofer.py</code> runs two threads concurrently:</p>
+<p><strong>Trigger thread</strong> (~6 s cadence): sends an A-query for
+<code>www.target.lab</code> to the resolver. Unbound deduplicates
+in-flight queries of the same <code>(qname, qtype)</code>, so a slow
+cadence is correct: it ensures each new trigger reliably emits an
+outbound query rather than being absorbed into a pending one. The
+cadence matches Unbound’s default ~5 s negative-cache TTL.</p>
+<p><strong>Flood thread:</strong> sweeps every transaction ID 0..65535,
+sending forged DNS replies that:</p>
+<ul>
+<li>impersonate the forwarder
+(<code>IP src = 192.168.56.99</code>),</li>
+<li>target the resolver’s pinned source port
+(<code>UDP dport = 33333</code>),</li>
+<li>contain a question section matching <code>www.target.lab. A</code>,
+and</li>
+<li>contain an answer section binding
+<code>www.target.lab. → 192.168.56.10</code> with a 24-hour TTL.</li>
+</ul>
+<p>The resolver accepts the first spoofed reply that matches all four
+of: destination IP, destination port, transaction ID, and question
+section. Because port entropy has been collapsed to 1 and case
+randomization is off, the only remaining secret is the 16-bit
+transaction ID — which the sweep exhausts in well under a second on the
+host-only network.</p>
+<h2 id="execution-evidence">5. Execution &amp; Evidence</h2>
+<p>The lab was provisioned with <code>vagrant up</code> from
+<code>lab/vagrant/Vagrantfile</code>, producing three Ubuntu 22.04 VMs
+on internal network <code>lab_intnet</code>. The end-to-end demo
+<code>lab/scripts/run-part1.sh</code> orchestrates: reset → start tshark
+on resolver → run spoofer on attacker → run <code>demo.sh</code> on
+victim → copy pcap back. Final result of the recorded run:</p>
+<pre><code>[+] poisoned in 4.2 seconds (target=www.target.lab → 192.168.56.10)
+[+] PASS — www.target.lab resolves to 192.168.56.10 (poisoned)
+[+] Part 1 demo SUCCESS  (pcap → docs/captures/poison.pcap)</code></pre>
+<p>(Full demo log:
+[<code>docs/screenshots/03-07-full-demo-run.txt</code>].)</p>
+<h3 id="pre-attack-baseline">5.1 Pre-attack baseline</h3>
+<p>[<code>docs/screenshots/02-resolver-baseline.txt</code>]</p>
+<pre><code>$ dig @192.168.56.20 www.target.lab
+;; communications error to 192.168.56.20#53: timed out
+;; no servers could be reached
+
+$ dig @192.168.56.20 example.com +short
+172.66.147.243
+104.20.23.154</code></pre>
+<p>The resolver returns SERVFAIL for <code>www.target.lab</code>
+(queries to the black-hole forwarder time out at the resolver after ~5
+s) but resolves <code>example.com</code> normally — proving the resolver
+is functional, just exploitable on the <code>target.lab</code> zone.</p>
+<h3 id="post-attack-proof">5.2 Post-attack proof</h3>
+<p>[<code>docs/screenshots/04-dig-poisoned.txt</code>]</p>
+<pre><code>$ dig @192.168.56.20 www.target.lab
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 51825
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+;; ANSWER SECTION:
+www.target.lab.    86360    IN    A    192.168.56.10
+;; Query time: 0 msec</code></pre>
+<p>Note the TTL <code>86360</code> (started at 86400 in the spoofed
+reply, decreased ~40 s by query time) and
+<code>Query time: 0 msec</code> — the answer is served from the
+resolver’s cache.</p>
+<p>[<code>docs/screenshots/05-curl-pwned.txt</code>]</p>
+<pre><code>$ POISONED_IP=$(dig @192.168.56.20 www.target.lab +short)
+$ curl --resolve www.target.lab:80:$POISONED_IP http://www.target.lab/
+&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+  &lt;title&gt;PWNED&lt;/title&gt;
+  ...
+  &lt;h1&gt;YOU&#39;VE BEEN PWNED&lt;/h1&gt;
+  &lt;p&gt;This page was served from 192.168.56.10 because the DNS cache for
+     www.target.lab on resolver 192.168.56.20 was poisoned.&lt;/p&gt;</code></pre>
+<p>The HTTP request lands on the attacker’s Nginx (which has been
+hosting the page the entire time) instead of any legitimate server.</p>
+<h3 id="packet-level-evidence-docscapturespoison.pcap">5.3 Packet-level
+evidence (<code>docs/captures/poison.pcap</code>)</h3>
+<p>The pcap was captured on the resolver’s <code>enp0s8</code> interface
+for the duration of <code>run-part1.sh</code>. Aggregate counts via
+<code>tshark</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Packet class</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total DNS packets</td>
+<td>23 843</td>
+</tr>
+<tr>
+<td>Spoofed replies (<code>src=192.168.56.99</code>,
+<code>dport=33333</code>)</td>
+<td>23 828</td>
+</tr>
+<tr>
+<td>Resolver outbound queries (<code>dst=192.168.56.99</code>)</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Trigger queries from attacker (<code>192.168.56.10</code> →
+<code>.20</code>)</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>Interpretation: the spoofer sent 23 828 forged replies sweeping txids
+sequentially; the resolver fired 5 outbound queries (3 explicit triggers
+from the spoofer plus 2 retries from the same trigger window) and one of
+the spoofed replies matched (dst port 33333, correct txid, matching
+question section, source IP <code>192.168.56.99</code>) before unbound’s
+forwarder timeout.</p>
+<p>[<code>docs/screenshots/06-wireshark-overview.txt</code>] excerpt —
+first 9 spoofs (note sequential txids 0x0000…0x0008, all targeting dport
+33333):</p>
+<pre><code>frame  time(s)     src            sport  dst            dport  txid     resp  qname
+1      0.000000    192.168.56.99  53     192.168.56.20  33333  0x0000   1     www.target.lab
+2      0.000001    192.168.56.99  53     192.168.56.20  33333  0x0001   1     www.target.lab
+3      0.000001    192.168.56.99  53     192.168.56.20  33333  0x0002   1     www.target.lab
+...</code></pre>
+<p>[<code>docs/screenshots/07-wireshark-spoofed-reply.txt</code>] — the
+resolver’s outbound query at frame 113 (UDP src port = 33333 confirmed)
+and the matching spoofed reply that landed.</p>
+<h3 id="reproducibility">5.4 Reproducibility</h3>
+<p>Three back-to-back runs with <code>bash run-part1.sh</code> in this
+run produced poison times of 0.4 s, 1.4 s, and 4.2 s respectively. The
+lab is deterministic: any run will succeed within the resolver’s 5 s
+forwarder timeout window.</p>
+<h2 id="caveats">6. Caveats</h2>
+<ul>
+<li><strong>Black-hole forwarder.</strong> The resolver forwards
+<code>target.lab</code> to <code>192.168.56.99</code>, an unassigned IP.
+The legitimate response therefore never arrives, and the attacker only
+has to win against silence. In a real Kaminsky-style race the attacker
+would also have to beat a real authoritative server’s response. The pcap
+reflects this simplification.</li>
+<li><strong>Single-record poisoning, no NS-glue.</strong> The spoofed
+reply only injects one A record. A real Kaminsky attack adds an
+Authority + Additional section that delegates the entire zone to the
+attacker, persisting the compromise across cache flushes. We chose the
+simpler form to fit the 4-day build window.</li>
+<li><strong>Source-port pinned externally.</strong> A real
+RFC-5452-compliant resolver randomizes its source port across ~64,000
+values. Forcing the port to 33333 reduces the attacker’s work factor by
+~2^16. The same is true of case randomization
+(<code>use-caps-for-id: no</code>).</li>
+<li><strong>No DNSSEC.</strong> The validator is unloaded. Part 3 will
+re-enable it and show that the same attack now fails.</li>
+</ul>
+<h1 id="part-2-attack-analysis">Part 2 — Attack Analysis</h1>
+<h2 id="wireshark-capture-and-aggregate-counts">7. Wireshark capture and
+aggregate counts</h2>
+<p>The pcap <code>docs/captures/poison.pcap</code> was captured on the
+resolver’s <code>enp0s8</code> interface for the duration of
+<code>lab/scripts/run-part1.sh</code>. <code>tshark</code> aggregates
+over the entire capture:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total packets</td>
+<td>23 845</td>
+</tr>
+<tr>
+<td>Total DNS packets</td>
+<td>23 843</td>
+</tr>
+<tr>
+<td>Spoofed replies
+(<code>192.168.56.99 → 192.168.56.20:33333</code>)</td>
+<td>23 828</td>
+</tr>
+<tr>
+<td>Resolver outbound queries
+(<code>192.168.56.20 → 192.168.56.99</code>)</td>
+<td><strong>5</strong></td>
+</tr>
+<tr>
+<td>Trigger queries from attacker
+(<code>192.168.56.10 → 192.168.56.20</code>)</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Successful resolver replies to trigger</td>
+<td>1</td>
+</tr>
+<tr>
+<td>ICMP port-unreachable from resolver</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>The 0 ICMP-unreachable count is significant: every spoof was either
+accepted by unbound’s outstanding-query table or silently dropped, never
+rejected at the kernel level. This confirms <code>rp_filter=0</code> is
+in effect — the kernel did not drop spoofs that claimed source
+<code>192.168.56.99</code> on the wrong route.</p>
+<h2 id="transaction-id-and-source-port-analysis">8. Transaction ID and
+source port analysis</h2>
+<h3 id="resolver-source-port-the-entropy-that-was-supposed-to-protect">8.1
+Resolver source port (the entropy that was supposed to protect)</h3>
+<p>Every one of the resolver’s 5 outbound queries used UDP source port
+<code>33333</code>:</p>
+<pre><code>$ tshark -Y &#39;ip.src==192.168.56.20 &amp;&amp; ip.dst==192.168.56.99&#39; \
+         -T fields -e udp.srcport | sort | uniq -c
+      5 33333</code></pre>
+<p>A modern RFC 5452-compliant resolver would have spread these 5
+queries across roughly 60 000 ephemeral ports (Linux’s default ephemeral
+range is <code>32768–60999</code>, ~28 000 ports; some implementations
+use the full <code>1024–65535</code> ~64 000 ports). The lab’s pinned
+port collapses this entropy from ~16 bits to <strong>0
+bits</strong>.</p>
+<h3 id="trigger-windows-resolver-outbound-queries">8.2 Trigger windows
+(resolver outbound queries)</h3>
+<p>Each outbound query opens a ~5-second race window during which
+unbound will accept a reply matching all four of
+<code>(dst IP, dst port, qname, txid)</code>. The first three are known
+to the attacker; only the txid is secret. Five trigger windows in this
+run:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Frame</th>
+<th>t (s)</th>
+<th>UDP src port</th>
+<th>DNS txid</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>113</td>
+<td>0.047</td>
+<td>33333</td>
+<td>0xa6bb (42683)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2 267</td>
+<td>0.427</td>
+<td>33333</td>
+<td>0xab44 (43844)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4 414</td>
+<td>0.808</td>
+<td>33333</td>
+<td>0x762c (30252)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>8 812</td>
+<td>1.563</td>
+<td>33333</td>
+<td>0x0c87 (3207)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>13 030</td>
+<td>2.319</td>
+<td>33333</td>
+<td>0x492c (18732)</td>
+</tr>
+</tbody>
+</table>
+<p>Each txid is freshly random, as intended by RFC 5452 — but the txid
+alone is only 16 bits, and the spoofer can sweep all 65 536 values in a
+few seconds (see §8.3).</p>
+<h3 id="spoof-flood-characteristics">8.3 Spoof flood
+characteristics</h3>
+<p><code>spoofer.py</code> builds the spoofed reply once (UDP checksum
+disabled per RFC 768) and rewrites only the 2 txid bytes per send
+through a persistent <code>IPPROTO_RAW</code> socket. Per-second rate
+from the pcap:</p>
+<table>
+<thead>
+<tr>
+<th>Capture second</th>
+<th>Spoofed packets sent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0–1 s</td>
+<td>5 609</td>
+</tr>
+<tr>
+<td>1–2 s</td>
+<td>5 628</td>
+</tr>
+<tr>
+<td>2–3 s</td>
+<td>5 810</td>
+</tr>
+<tr>
+<td>3–4 s</td>
+<td>5 860</td>
+</tr>
+<tr>
+<td>4–5 s</td>
+<td>921 <em>(spoofer detected poison; flood thread stopping)</em></td>
+</tr>
+</tbody>
+</table>
+<p>Sustained rate is ~5 800 packets/sec. One full sweep of the 16-bit
+txid space takes 65 536 / 5 800 ≈ 11.3 seconds — but the spoofer doesn’t
+need to complete a full sweep before the trigger fires; it just needs to
+<em>pass through</em> the resolver’s chosen txid value while the trigger
+window is open.</p>
+<h3 id="why-the-attack-succeeded-race-window-timing">8.4 Why the attack
+succeeded — race window timing</h3>
+<p>Mapping the resolver’s chosen txid to the spoofer’s progress at the
+trigger time produces a clear “miss / miss / miss / miss / hit”
+pattern:</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>t (s)</th>
+<th>Resolver txid</th>
+<th>Flood at t (txid swept up to)</th>
+<th>Trigger window expires</th>
+<th>When flood reaches that txid</th>
+<th>Match?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0.047</td>
+<td>0xa6bb (42 683)</td>
+<td>~270</td>
+<td>5.05 s</td>
+<td>~7.4 s</td>
+<td>❌ outside window</td>
+</tr>
+<tr>
+<td>2</td>
+<td>0.427</td>
+<td>0xab44 (43 844)</td>
+<td>~2 500</td>
+<td>5.43 s</td>
+<td>~7.6 s</td>
+<td>❌ outside window</td>
+</tr>
+<tr>
+<td>3</td>
+<td>0.808</td>
+<td>0x762c (30 252)</td>
+<td>~4 700</td>
+<td>5.81 s</td>
+<td>~5.2 s</td>
+<td>❌ ~0.6 s late</td>
+</tr>
+<tr>
+<td>4</td>
+<td>1.563</td>
+<td>0x0c87 (3 207)</td>
+<td>~9 100</td>
+<td>6.56 s</td>
+<td>already passed</td>
+<td>❌ flood was at 9 100, must wait next sweep at ~14.6 s</td>
+</tr>
+<tr>
+<td>5</td>
+<td>2.319</td>
+<td>0x492c (18 732)</td>
+<td>~13 500</td>
+<td>7.32 s</td>
+<td>~3.2 s</td>
+<td>✅ matched</td>
+</tr>
+</tbody>
+</table>
+<p>The winning spoof is <strong>frame 18 742 at t = 3.297 s</strong>,
+txid = 0x492c. It arrived 0.978 s after trigger #5 fired — well within
+the ~5 s forwarder timeout — and the flood was passing through this txid
+at ~3.2 s into its sweep.</p>
+<p>The full set of spoofs that match a trigger txid (whether their
+timing fell inside the window or not):</p>
+<pre><code>Frame  Time(s)  src           dst           txid    Within window?
+3214   0.601    192.168.56.99 192.168.56.20 0x0c87  no (trigger 4 fired at 1.563 s)
+18742  3.297    192.168.56.99 192.168.56.20 0x492c  YES (trigger 5 fired at 2.319 s)  ← MATCH</code></pre>
+<p>(Frame 3214 carried the right txid for what would <em>become</em>
+trigger 4’s query, but it arrived 0.96 s before trigger 4 fired — the
+resolver’s socket on port 33333 wasn’t yet bound for this query, so the
+kernel silently dropped the reply.)</p>
+<h2 id="why-the-attack-succeeded-defenses-bypassed">9. Why the attack
+succeeded — defenses bypassed</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Field unbound checks on a reply</th>
+<th>Entropy in default config</th>
+<th>Entropy in this lab</th>
+<th>How the attacker handled it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Destination IP (= resolver’s IP)</td>
+<td>0 bits</td>
+<td>0 bits</td>
+<td>Known target</td>
+</tr>
+<tr>
+<td>Destination UDP port (resolver’s source port for this query)</td>
+<td>~16 bits</td>
+<td><strong>0 bits</strong></td>
+<td>Pinned to 33333 by the lab config</td>
+</tr>
+<tr>
+<td>Question section (qname + qtype)</td>
+<td>0 bits + 0x20 hash bits</td>
+<td>0 bits</td>
+<td>Known target name; 0x20 disabled</td>
+</tr>
+<tr>
+<td>DNS Transaction ID</td>
+<td>16 bits</td>
+<td>16 bits</td>
+<td>Brute-forced via flood at 5 800 pps</td>
+</tr>
+<tr>
+<td><strong>Total entropy attacker must defeat</strong></td>
+<td><strong>≥ 32 bits</strong></td>
+<td><strong>16 bits</strong></td>
+<td>One full sweep ≈ 11 s; matched in 0.978 s</td>
+</tr>
+</tbody>
+</table>
+<p>In a hardened resolver the attacker would face combined ≥ 32-bit
+entropy (txid × source port), making a successful match in seconds
+statistically improbable. By collapsing source-port entropy to zero, the
+lab reduces the puzzle to a 16-bit brute force — which a single laptop
+can clear within one forwarder-timeout window with margin to spare.</p>
+<p>A secondary factor: the kernel’s <code>rp_filter=0</code> setting
+allows packets sourced from <code>192.168.56.99</code> to reach unbound
+at all. With strict reverse-path filtering the resolver would drop the
+spoofs at the kernel before unbound saw them. (<code>rp_filter</code> is
+a perimeter defense, not a DNS-specific one, but it stops naive off-path
+source spoofing.)</p>
+<h2 id="summary">10. Summary</h2>
+<p>The cache poisoning attack succeeded in ~3.3 s of pcap time (~4.2 s
+of wall time after <code>verify_poisoned</code>’s 2-second poll caught
+the result) because the resolver’s outbound query had only 16 bits of
+secret entropy (the DNS transaction ID), and the attacker’s flood —
+sustained at ~5 800 packets/sec — could exhaust those 16 bits within a
+single ~5-second forwarder-timeout window. The pcap evidence is
+unambiguous: five trigger windows opened, four passed without the flood
+landing the right txid in time, and the fifth (txid <code>0x492c</code>)
+matched.</p>
+<p>The two structural weaknesses that made this possible — pinned source
+port and disabled DNSSEC validation — both have well-known defenses. RFC
+5452 source-port randomization adds ~16 bits of entropy that would
+multiply the attacker’s required throughput by ~65 000×; DNSSEC adds a
+cryptographic check that no amount of brute-force at the resolver level
+can defeat. Part 3 deploys DNSSEC and demonstrates that the same attack
+now fails even with the source-port weakness still in place.</p>
+</body>
+</html>

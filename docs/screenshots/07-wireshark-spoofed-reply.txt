@@ -1,0 +1,54 @@
+### Resolver outbound query to 192.168.56.99 ###
+Frame 113: 85 bytes on wire (680 bits), 85 bytes captured (680 bits) on interface enp0s8, id 0
+    Interface id: 0 (enp0s8)
+        Interface name: enp0s8
+    Encapsulation type: Ethernet (1)
+    Arrival Time: May 10, 2026 18:09:08.189130871 UTC
+    [Time shift for this packet: 0.000000000 seconds]
+    Epoch Time: 1778436548.189130871 seconds
+    [Time delta from previous captured frame: 0.000434183 seconds]
+    [Time delta from previous displayed frame: 0.000000000 seconds]
+    [Time since reference or first frame: 0.046774619 seconds]
+    Frame Number: 113
+    Frame Length: 85 bytes (680 bits)
+    Capture Length: 85 bytes (680 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:ip:udp:dns]
+Ethernet II, Src: PcsCompu_f9:44:bd (08:00:27:f9:44:bd), Dst: 02:00:00:00:00:99 (02:00:00:00:00:99)
+    Destination: 02:00:00:00:00:99 (02:00:00:00:00:99)
+        Address: 02:00:00:00:00:99 (02:00:00:00:00:99)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Source: PcsCompu_f9:44:bd (08:00:27:f9:44:bd)
+        Address: PcsCompu_f9:44:bd (08:00:27:f9:44:bd)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: IPv4 (0x0800)
+Internet Protocol Version 4, Src: 192.168.56.20, Dst: 192.168.56.99
+    0100 .... = Version: 4
+    .... 0101 = Header Length: 20 bytes (5)
+    Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
+        0000 00.. = Differentiated Services Codepoint: Default (0)
+        .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
+    Total Length: 71
+    Identification: 0xf4e9 (62697)
+    Flags: 0x00
+        0... .... = Reserved bit: Not set
+        .0.. .... = Don't fragment: Not set
+        ..0. .... = More fragments: Not set
+    ...0 0000 0000 0000 = Fragment Offset: 0
+    Time to Live: 64
+    Protocol: UDP (17)
+    Header Checksum: 0x93f4 [validation disabled]
+    [Header checksum status: Unverified]
+    Source Address: 192.168.56.20
+    Destination Address: 192.168.56.99
+User Datagram Protocol, Src Port: 33333, Dst Port: 53
+    Source Port: 33333
+    Destination Port: 53
+    Length: 51
+    Checksum: 0xf20c [unverified]
+
+### Spoofed reply that LANDED (matching txid, dport=33333) ###
+Resolver outbound txid was: 0xa6bb

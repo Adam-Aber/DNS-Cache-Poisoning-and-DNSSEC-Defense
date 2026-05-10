@@ -1,0 +1,32 @@
+### curl http://www.target.lab/ via the poisoned resolver ###
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PWNED</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #111;
+      color: #f33;
+      text-align: center;
+      padding-top: 80px;
+    }
+    h1 { font-size: 4em; margin-bottom: 0.4em; }
+    p  { max-width: 720px; margin: 1em auto; line-height: 1.5; }
+    code { background: #222; padding: 2px 6px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>YOU'VE BEEN PWNED</h1>
+  <p>
+    This page was served from <code>192.168.56.10</code> because the DNS
+    cache for <strong>www.target.lab</strong> on resolver
+    <code>192.168.56.20</code> was poisoned.
+  </p>
+  <p>
+    A real attacker would serve a phishing clone of the bank you thought
+    you were visiting. Always validate DNS responses with DNSSEC.
+  </p>
+</body>
+</html>

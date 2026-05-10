@@ -1,0 +1,7 @@
+metric,part3
+total_packets,401269
+dns_packets,401265
+spoofed_replies,401223
+resolver_outbound_to_99,15
+trigger_queries,26
+resolver_servfail_to_clients,0

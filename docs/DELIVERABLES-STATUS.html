@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Part 1 Deliverables Status</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <link href="data:text/css;base64,Ym9keXtmb250LWZhbWlseTpDYW1icmlhLEdlb3JnaWEsc2VyaWY7bWF4LXdpZHRoOjkwMHB4O21hcmdpbjoyZW0gYXV0bztwYWRkaW5nOjAgMmVtO2xpbmUtaGVpZ2h0OjEuNTtjb2xvcjojMjIyfWgxLGgyLGgze2ZvbnQtZmFtaWx5OkNhbGlicmksQXJpYWwsc2Fucy1zZXJpZjtjb2xvcjojMWEzMDUwfWgxe2JvcmRlci1ib3R0b206MnB4IHNvbGlkICMxYTMwNTA7cGFkZGluZy1ib3R0b206MC4yZW19aDJ7Ym9yZGVyLWJvdHRvbToxcHggc29saWQgI2NjYztwYWRkaW5nLWJvdHRvbTowLjE1ZW07bWFyZ2luLXRvcDoyZW19cHJle2JhY2tncm91bmQ6I2Y1ZjVmNTtwYWRkaW5nOjAuOGVtO2JvcmRlci1sZWZ0OjNweCBzb2xpZCAjMWEzMDUwO292ZXJmbG93LXg6YXV0bztmb250LXNpemU6MC44NWVtfWNvZGV7YmFja2dyb3VuZDojZWVmO3BhZGRpbmc6MXB4IDRweDtib3JkZXItcmFkaXVzOjNweH10YWJsZXtib3JkZXItY29sbGFwc2U6Y29sbGFwc2U7bWFyZ2luOjFlbSAwO2ZvbnQtc2l6ZTowLjk1ZW19dGgsdGR7Ym9yZGVyOjFweCBzb2xpZCAjOTk5O3BhZGRpbmc6MC40ZW0gMC44ZW19dGh7YmFja2dyb3VuZDojMWEzMDUwO2NvbG9yOiNmZmZ9YmxvY2txdW90ZXtib3JkZXItbGVmdDo0cHggc29saWQgIzg4ODtjb2xvcjojNTU1O3BhZGRpbmctbGVmdDoxZW07Zm9udC1zdHlsZTppdGFsaWN9" rel="stylesheet" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Part 1 Deliverables Status</h1>
+</header>
+<h1 id="part-1-deliverables-status">Part 1 Deliverables — Status</h1>
+<p>Audited 2026-05-10 after the working end-to-end demo.</p>
+<h2 id="done">✅ Done</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Spec deliverable</th>
+<th>Status</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lab provisions reproducibly</td>
+<td>✅</td>
+<td><code>lab/vagrant/Vagrantfile</code> + provisioners;
+<code>vagrant up</code> from a clean clone produces all 3 VMs</td>
+</tr>
+<tr>
+<td>Working DNS cache poisoning attack</td>
+<td>✅</td>
+<td><code>lab/attacker/spoofer.py</code> (byte-patching raw-socket
+flood) lands the poison in 0.4–4.2 s</td>
+</tr>
+<tr>
+<td>Resolver weakened per spec §3.1 table</td>
+<td>✅</td>
+<td><code>lab/resolver/unbound-vulnerable.conf</code>, verified source
+port pinned to 33333</td>
+</tr>
+<tr>
+<td>End-to-end orchestration</td>
+<td>✅</td>
+<td><code>lab/scripts/run-part1.sh</code> outputs
+<code>[+] Part 1 demo SUCCESS</code></td>
+</tr>
+<tr>
+<td>Pcap of full attack</td>
+<td>✅</td>
+<td><code>docs/captures/poison.pcap</code> (3.2 MB, 23 843 DNS
+packets)</td>
+</tr>
+<tr>
+<td>Pre-attack SERVFAIL baseline</td>
+<td>✅</td>
+<td><code>docs/screenshots/02-resolver-baseline.txt</code></td>
+</tr>
+<tr>
+<td>Post-attack <code>dig</code> showing poisoned A</td>
+<td>✅</td>
+<td><code>docs/screenshots/04-dig-poisoned.txt</code></td>
+</tr>
+<tr>
+<td>Post-attack <code>curl</code> returning PWNED page</td>
+<td>✅</td>
+<td><code>docs/screenshots/05-curl-pwned.txt</code></td>
+</tr>
+<tr>
+<td>Spoofer terminal output</td>
+<td>✅</td>
+<td><code>docs/screenshots/03-07-full-demo-run.txt</code></td>
+</tr>
+<tr>
+<td>Wireshark-equivalent timeline</td>
+<td>✅</td>
+<td><code>docs/screenshots/06-wireshark-overview.txt</code> (tshark
+output)</td>
+</tr>
+<tr>
+<td>Wireshark-equivalent expanded packet</td>
+<td>✅</td>
+<td><code>docs/screenshots/07-wireshark-spoofed-reply.txt</code></td>
+</tr>
+<tr>
+<td>Pcap aggregate stats for report</td>
+<td>✅</td>
+<td><code>docs/screenshots/pcap-stats.txt</code></td>
+</tr>
+<tr>
+<td>Report sections 1–6</td>
+<td>✅</td>
+<td><code>docs/report/part1-draft.md</code></td>
+</tr>
+<tr>
+<td>Unit tests for spoofer packet builders</td>
+<td>✅</td>
+<td><code>lab/attacker/test_spoofer.py</code> (2 tests pass)</td>
+</tr>
+<tr>
+<td>README + repo structure</td>
+<td>✅</td>
+<td><code>README.md</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="provided-as-text-instead-of-png-screenshots">⚠️ Provided as text
+instead of PNG screenshots</h2>
+<p>The course rubric mentions “screenshots.” I produced text-log
+equivalents (saved as <code>.txt</code>) because I’m running headless
+and cannot take GUI screenshots from this environment. The text logs
+contain identical information — same <code>dig</code> output, same
+<code>curl</code> HTML, same <code>tshark</code> packet decode — just
+rendered to a text file rather than a captured terminal image.</p>
+<p><strong>To convert to PNG (your call, if your grader insists on
+PNG):</strong></p>
+<p>For the terminal text logs (02–05), open each <code>.txt</code> in
+your terminal and use Windows’ <code>Snipping Tool</code> (Win+Shift+S)
+to capture:</p>
+<ul>
+<li><code>02-resolver-baseline.txt</code> →
+<code>02-resolver-baseline.png</code></li>
+<li><code>03-07-full-demo-run.txt</code> → split into
+<code>03-spoofer-running.png</code> (the <code>[+] poisoned</code>
+portion) and <code>04-dig-poisoned.png</code> (the dig portion)</li>
+<li><code>04-dig-poisoned.txt</code> →
+<code>04-dig-poisoned.png</code></li>
+<li><code>05-curl-pwned.txt</code> → <code>05-curl-pwned.png</code></li>
+</ul>
+<p>For the Wireshark screenshots (06–07), open the pcap visually:</p>
+<pre><code>&quot;C:\Program Files\Wireshark\Wireshark.exe&quot; docs\captures\poison.pcap</code></pre>
+<ul>
+<li>Apply display filter <code>dns</code> → screenshot the packet list →
+<code>06-wireshark-overview.png</code></li>
+<li>Find any spoof from <code>192.168.56.99</code> → expand DNS layer →
+screenshot → <code>07-wireshark-spoofed-reply.png</code></li>
+</ul>
+<h2 id="not-done-need-you-your-team">❌ Not done — need you / your
+team</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Spec deliverable</th>
+<th>Why I couldn’t do it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01-topology.png</code></td>
+<td>I would screenshot a terminal showing <code>ip addr</code> on each
+VM, but the user wants visual screenshots. The text equivalent of
+<code>vagrant status</code> and <code>ip -4 addr show</code> is in the
+demo logs.</td>
+</tr>
+<tr>
+<td>Demo video (~2 min)</td>
+<td>Requires a screen recorder running on your desktop</td>
+</tr>
+<tr>
+<td>Final terminal screenshots in PNG</td>
+<td>Requires GUI access I don’t have</td>
+</tr>
+<tr>
+<td>Push to GitHub + tag <code>part1-complete</code></td>
+<td>Need to create the repo on GitHub first; you should do this from
+your account</td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-to-finish-in-1-hour">How to finish in &lt;1 hour</h2>
+<ol type="1">
+<li><p><strong>Recordings</strong> (45 min):</p>
+<ul>
+<li>Open three Windows Terminal panes:
+<ul>
+<li>Pane 1: <code>vagrant ssh attacker</code> then
+<code>cd /lab/attacker</code></li>
+<li>Pane 2: <code>vagrant ssh resolver</code> then
+<code>sudo tail -f /var/log/unbound/unbound.log</code> (or just
+<code>htop</code>)</li>
+<li>Pane 3: <code>vagrant ssh victim</code></li>
+</ul></li>
+<li>Start screen recording (OBS or Win+Alt+R for Game Bar).</li>
+<li>On victim pane: run <code>dig @192.168.56.20 www.target.lab</code>
+(shows SERVFAIL).</li>
+<li>On attacker pane: run
+<code>cd /lab/scripts &amp;&amp; bash run-part1.sh</code>.</li>
+<li>Watch <code>[+] poisoned in N seconds</code>.</li>
+<li>On victim pane: re-run <code>dig</code>, then
+<code>curl --resolve www.target.lab:80:192.168.56.10 http://www.target.lab/</code>.</li>
+<li>Stop recording. Save as
+<code>docs/captures/part1-demo.mp4</code>.</li>
+</ul></li>
+<li><p><strong>PNG screenshots from text logs</strong> (10 min):</p>
+<ul>
+<li>For each <code>.txt</code> file in <code>docs/screenshots/</code>,
+open in <code>cat</code> or <code>less</code> in Windows Terminal →
+Win+Shift+S → save as the corresponding <code>NN-name.png</code>.</li>
+</ul></li>
+<li><p><strong>Wireshark screenshots</strong> (5 min): open
+<code>docs/captures/poison.pcap</code>, apply filter <code>dns</code>,
+take 2 screenshots as described above.</p></li>
+<li><p><strong>GitHub</strong> (5 min):</p>
+<pre><code>gh repo create dns-cache-poisoning --public --source=. --push
+git tag part1-complete &amp;&amp; git push --tags</code></pre></li>
+<li><p><strong>Hand in:</strong> report
+<code>docs/report/part1-draft.md</code> (rename to
+<code>part1.pdf</code> via Pandoc or just submit the .md), the repo
+link, and the demo video.</p></li>
+</ol>
+</body>
+</html>

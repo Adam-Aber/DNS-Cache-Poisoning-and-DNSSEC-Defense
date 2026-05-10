@@ -1,0 +1,8 @@
+Total DNS packets:
+23843
+Spoofed replies (src=99 dport=33333):
+23828
+Resolver outbound queries (dst=99):
+5
+Trigger queries from attacker (10→20):
+3

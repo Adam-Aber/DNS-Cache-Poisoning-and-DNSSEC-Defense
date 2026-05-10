@@ -1,0 +1,13 @@
+=== Phase 1 — Post-attack dig ===
+192.168.56.10
+
+=== Phase 2 — HTTP fetch ===
+(curl --resolve www.target.lab:80:192.168.56.10)
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PWNED</title>
+  <style>
+    body {
+      font-family: monospace;
